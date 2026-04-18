@@ -17,7 +17,8 @@ export function AuthProvider({ children }) {
         try {
             const { data } = await api.get("/auth/me");
             setUser(data);
-        } catch {
+        } catch (err) {
+            console.warn("Auth bootstrap failed:", err?.message || err);
             localStorage.removeItem(TOKEN_KEY);
             setUser(false);
         } finally {
@@ -46,7 +47,9 @@ export function AuthProvider({ children }) {
     const logout = async () => {
         try {
             await api.post("/auth/logout");
-        } catch {}
+        } catch (err) {
+            console.warn("Logout request failed:", err?.message || err);
+        }
         localStorage.removeItem(TOKEN_KEY);
         setUser(false);
     };

@@ -30,7 +30,10 @@ export default function ClientDetailDrawer({ client, onClose, onChange }) {
         try {
             const { data } = await api.get(`/clients/${client.id}`);
             onChange?.(data);
-        } catch {}
+        } catch (err) {
+            console.error("Failed to reload client:", err);
+            toast.error("Failed to refresh client");
+        }
     };
 
     const togglePaid = async (m) => {

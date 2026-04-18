@@ -377,10 +377,13 @@ async def payment_status(session_id: str, request: Request, user: dict = Depends
     host_url = str(request.base_url).rstrip("/")
     webhook_url = f"{host_url}/api/webhook/stripe"
     stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    status = None
     try:
         status = await stripe_checkout.get_checkout_status(session_id)
     except Exception as e:
         logger.warning(f"Stripe status lookup failed for {session_id}: {e}")
+
+    if status is None:
         return {
             "session_id": session_id,
             "payment_status": tx.get("payment_status", "pending"),
