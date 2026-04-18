@@ -1,0 +1,98 @@
+{
+  "theme": "Dark",
+  "archetype": "4 (Swiss & High-Contrast)",
+  "emotional_tone": "Serious, high-stakes, polished, operator command centre",
+  "typography": {
+    "headings": {
+      "family": "Cabinet Grotesk, sans-serif",
+      "weights": ["400", "700", "900"],
+      "tracking": "tracking-tight"
+    },
+    "body": {
+      "family": "IBM Plex Sans, sans-serif",
+      "weights": ["400", "500", "600"]
+    },
+    "mono_metrics": {
+      "family": "JetBrains Mono, monospace",
+      "weights": ["400", "700"]
+    },
+    "scale_rules": {
+      "h1": "text-4xl sm:text-5xl lg:text-5xl tracking-tighter font-bold",
+      "h2": "text-2xl sm:text-3xl tracking-tight font-semibold",
+      "h3": "text-xl sm:text-2xl font-medium",
+      "h4": "text-lg sm:text-xl font-medium",
+      "body": "text-sm md:text-base",
+      "labels_overlines": "text-xs uppercase tracking-[0.2em] font-medium text-muted-foreground"
+    }
+  },
+  "colors": {
+    "background": "#08080A",
+    "surface": "#121214",
+    "surface_hover": "#1A1A1D",
+    "border": "#27272A",
+    "border_focus": "#3F3F46",
+    "text_primary": "#FFFFFF",
+    "text_secondary": "#A1A1AA",
+    "text_muted": "#71717A",
+    "accents": {
+      "signal_red": "#FF3333",
+      "warning_yellow": "#FFCC00",
+      "electric_blue": "#3366FF",
+      "success_green": "#00FF66"
+    }
+  },
+  "spacing_and_layout": {
+    "philosophy": "Dense and compact spacing, 'Control Room' grid.",
+    "grid_strategy": "Mode B: 'Control Room' Grid - grid-cols-1 md:grid-cols-3 lg:grid-cols-4 with gap-4 or gap-6.",
+    "container_padding": "p-4 md:p-6",
+    "alignment": "Strict left-alignment for data/dense content.",
+    "surface_strategy": "Grid Borders (The 'Technical' Look). Expose the skeleton. border-collapse style layout. Minimal rounded corners (max rounded-sm or rounded-none)."
+  },
+  "components": {
+    "buttons": "Square or 2px radius. Stark contrast. Primary: White bg, black text. Secondary: Transparent bg, 1px border. Hover states must invert or lighten.",
+    "tables": "Dense. 1px border-b on rows. Monospace fonts for numbers/dates. Status badges must be minimal squares.",
+    "cards": "Cardless or 1px border. No shadows. Flat surface.",
+    "progress_bars": "Sharp edges, flat colors. No gradients. Unpaid milestones block progress visually (e.g., striped or greyed out).",
+    "modals": "Backdrop blur. Dark panel with stark 1px border.",
+    "inputs": "Flat, 1px border, stark focus ring (electric blue)."
+  },
+  "motion_and_interactions": {
+    "hover_states": "Crisp and instant. Background lightness increases. Text color brightens.",
+    "transitions": "Fast and purposeful. 150ms ease-out for color changes.",
+    "entrance": "Minimal fade-in, no bouncy animations."
+  },
+  "media_and_assets": {
+    "icons": "Phosphor Icons (@phosphor-icons/react) - Duotone or regular weight for dense data.",
+    "images": [
+      {
+        "category": "Login Background",
+        "description": "Completely black background with subtle texture",
+        "url": "https://images.unsplash.com/photo-1776278515592-08b921859c20?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1Mjh8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMGRhcmslMjB0ZXh0dXJlJTIwYmxhY2t8ZW58MHx8fHwxNzc2NTQ4MzgzfDA&ixlib=rb-4.1.0&q=85",
+        "usage": "Use as full-screen background for the admin login screen."
+      },
+      {
+        "category": "Admin Avatar",
+        "description": "Moody black and white portrait of a man in a suit",
+        "url": "https://images.pexels.com/photos/35839966/pexels-photo-35839966.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "usage": "Use in the header/navigation bar for the logged-in admin user."
+      }
+    ]
+  },
+  "testing_attributes": {
+    "rule": "All interactive and key informational elements MUST include a data-testid attribute.",
+    "convention": "kebab-case, role-based (NOT appearance-based)",
+    "examples": ["login-form-submit-button", "client-table-row", "mark-paid-button", "new-client-button"]
+  },
+  "instructions_to_main_agent": [
+    "Strictly adhere to the Dark Swiss Brutalist aesthetic. Avoid gradients, drop shadows, and pill-shaped buttons.",
+    "Use Cabinet Grotesk for headings and IBM Plex Sans for body text.",
+    "Use JetBrains Mono for all numeric values, dates, and currency to enforce a command-center feel.",
+    "Apply 'Grid Borders' strategy: Use 1px #27272A borders aggressively to separate sections and data points, creating a rigid dashboard skeleton.",
+    "Use the exact colors provided in the palette. Do not invent new shades of blue/teal.",
+    "Ensure all interactive elements have hover and focus states defined.",
+    "Status badges should use the accent colors: Signal Red for Delayed/Overdue, Warning Yellow for In Progress, Success Green for Completed.",
+    "Implement the UI using pure HTML/Tailwind for complex grids, and heavily customize Shadcn components (strip out rounding and shadows).",
+    "Install and use @phosphor-icons/react for icons.",
+    "Incorporate data-testid attributes universally for testing."
+  ]
+}
