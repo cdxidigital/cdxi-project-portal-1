@@ -7,7 +7,7 @@ import { toast } from "sonner";
 export default function Login() {
     const { user, login } = useAuth();
     const nav = useNavigate();
-    const [email, setEmail] = useState("admin@cdxi.com");
+    const [email, setEmail] = useState("parker@cdxi.au");
     const [password, setPassword] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
@@ -121,7 +121,7 @@ export default function Login() {
                     </button>
 
                     <p className="mono mt-6 text-[10px] uppercase tracking-[0.2em] text-zinc-600">
-                        default admin · admin@cdxi.com
+                        default admin · parker@cdxi.au
                     </p>
                 </form>
             </div>
