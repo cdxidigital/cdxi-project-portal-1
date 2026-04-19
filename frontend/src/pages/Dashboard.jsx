@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { api, formatCurrency, formatDate } from "@/lib/api";
+import { toast } from "sonner";
+import { api, formatApiErrorDetail, formatCurrency, formatDate } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import KpiCard from "@/components/KpiCard";
 import StatusBadge from "@/components/StatusBadge";
@@ -32,6 +33,16 @@ export default function Dashboard() {
             ]);
             setClients(cRes.data);
             setKpis(kRes.data);
+        } catch (err) {
+            // 401s are already handled by the axios interceptor. Surface
+            // everything else to the operator rather than silently failing.
+            if (err?.response?.status !== 401) {
+                toast.error(
+                    formatApiErrorDetail(err?.response?.data?.detail) ||
+                        err?.message ||
+                        "Failed to load dashboard",
+                );
+            }
         } finally {
             setLoading(false);
         }

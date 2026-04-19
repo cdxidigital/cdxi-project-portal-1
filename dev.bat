@@ -1,50 +1,55 @@
 @echo off
-REM Development script for CDXI Project Portal
-REM Runs both frontend and backend servers concurrently
+REM Development bootstrap for the cdxi Admin OS monorepo (Windows).
+REM Starts the FastAPI backend and the CRA frontend in two new console windows.
 
 setlocal enabledelayedexpansion
 
 echo.
-echo 🚀 Starting CDXI Project Portal development servers...
+echo Starting cdxi Admin OS development servers...
 echo.
 
-REM Check if frontend dependencies are installed
-if not exist "frontend\node_modules" (
-  echo 📦 Installing frontend dependencies...
-  cd frontend
-  call yarn install
-  cd ..
+REM Seed env files from examples if missing
+if not exist "frontend\.env" if exist "frontend\.env.example" (
+  copy /Y "frontend\.env.example" "frontend\.env" >NUL
+  echo Created frontend\.env from .env.example
+)
+if not exist "backend\.env" if exist "backend\.env.example" (
+  copy /Y "backend\.env.example" "backend\.env" >NUL
+  echo Created backend\.env from .env.example - edit it before continuing!
 )
 
-REM Check if backend virtual environment exists
+REM Frontend deps
+if not exist "frontend\node_modules" (
+  echo Installing frontend dependencies...
+  pushd frontend
+  call yarn install
+  popd
+)
+
+REM Backend venv + deps
 if not exist "backend\venv" (
-  echo 📦 Creating Python virtual environment...
-  cd backend
+  echo Creating Python virtual environment...
+  pushd backend
   python -m venv venv
   call venv\Scripts\activate.bat
+  python -m pip install --upgrade pip
   pip install -r requirements.txt
-  cd ..
+  call deactivate
+  popd
 ) else (
-  echo ✓ Virtual environment found
+  echo Backend virtualenv found.
 )
 
 echo.
-echo ✓ Starting servers...
+echo Starting servers...
 echo Frontend: http://localhost:3000
-echo Backend: http://localhost:8000
+echo Backend:  http://localhost:8000
 echo API Docs: http://localhost:8000/docs
 echo.
 
-REM Start frontend in a new window
-cd frontend
-start "CDXI Frontend" cmd /k "yarn start"
-cd ..
+start "cdxi Frontend" cmd /k "cd /d %~dp0frontend && yarn start"
+start "cdxi Backend"  cmd /k "cd /d %~dp0backend && call venv\Scripts\activate.bat && python -m uvicorn server:app --reload --host 0.0.0.0 --port 8000"
 
-REM Start backend in a new window
-cd backend
-start "CDXI Backend" cmd /k "call venv\Scripts\activate.bat && python -m uvicorn server:app --reload --host 0.0.0.0 --port 8000"
-cd ..
-
-echo ✓ Both servers are starting. Check the new windows for server output.
+echo Both servers are starting in new windows.
 echo.
 pause
