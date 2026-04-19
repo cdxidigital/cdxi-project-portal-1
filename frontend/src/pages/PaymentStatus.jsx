@@ -17,10 +17,6 @@ export default function PaymentStatus() {
             return;
         }
         let cancelled = false;
-        let timer = null;
-        const schedule = (fn, ms) => {
-            timer = setTimeout(fn, ms);
-        };
         const poll = async () => {
             if (cancelled) return;
             if (attempts.current >= 8) {
@@ -30,7 +26,6 @@ export default function PaymentStatus() {
             attempts.current += 1;
             try {
                 const { data } = await api.get(`/payments/status/${sessionId}`);
-                if (cancelled) return;
                 setInfo(data);
                 if (data.payment_status === "paid") {
                     setState("success");
@@ -40,15 +35,14 @@ export default function PaymentStatus() {
                     setState("failed");
                     return;
                 }
-                schedule(poll, 2000);
+                setTimeout(poll, 2000);
             } catch {
-                if (!cancelled) schedule(poll, 2500);
+                setTimeout(poll, 2500);
             }
         };
         poll();
         return () => {
             cancelled = true;
-            if (timer) clearTimeout(timer);
         };
     }, [sessionId]);
 
@@ -91,12 +85,7 @@ export default function PaymentStatus() {
                         </p>
                         {info && (
                             <div className="mt-6 grid grid-cols-2 gap-0 border border-[#27272A]">
-                                <Meta
-                                    label="Amount"
-                                    value={`$${(
-                                        Number(info.amount_total || 0) / 100
-                                    ).toFixed(2)}`}
-                                />
+                                <Meta label="Amount" value={`$${(info.amount_total / 100).toFixed(2)}`} />
                                 <Meta label="Currency" value={(info.currency || "usd").toUpperCase()} />
                                 <Meta label="Status" value={info.payment_status?.toUpperCase()} full />
                             </div>

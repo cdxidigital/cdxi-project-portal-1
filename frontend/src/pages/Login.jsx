@@ -7,7 +7,7 @@ import { toast } from "sonner";
 export default function Login() {
     const { user, login } = useAuth();
     const nav = useNavigate();
-    const [email, setEmail] = useState("");
+    const [email, setEmail] = useState("parker@cdxi.au");
     const [password, setPassword] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
@@ -17,9 +17,8 @@ export default function Login() {
 
     const submit = async (e) => {
         e.preventDefault();
-        if (submitting) return;
         setSubmitting(true);
-        const res = await login(email.trim().toLowerCase(), password);
+        const res = await login(email, password);
         setSubmitting(false);
         if (!res.ok) {
             toast.error(res.error || "Login failed");
@@ -92,8 +91,6 @@ export default function Login() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            autoComplete="email"
-                            autoFocus
                             data-testid="login-email-input"
                             className="mt-2 block h-11 w-full border border-[#27272A] bg-[#0C0C0E] px-3 text-sm text-white outline-none transition-colors focus:border-[#3366FF]"
                         />
@@ -108,7 +105,6 @@ export default function Login() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
-                            autoComplete="current-password"
                             data-testid="login-password-input"
                             className="mt-2 block h-11 w-full border border-[#27272A] bg-[#0C0C0E] px-3 text-sm text-white outline-none transition-colors focus:border-[#3366FF]"
                         />
@@ -125,7 +121,7 @@ export default function Login() {
                     </button>
 
                     <p className="mono mt-6 text-[10px] uppercase tracking-[0.2em] text-zinc-600">
-                        admin access only · contact ops for credentials
+                        default admin · parker@cdxi.au
                     </p>
                 </form>
             </div>
