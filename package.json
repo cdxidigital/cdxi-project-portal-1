@@ -1,0 +1,20 @@
+{
+  "name": "cdxi-project-portal",
+  "version": "1.0.0",
+  "description": "CDXI Project Portal - Monorepo with React frontend and Python backend",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd frontend && yarn start",
+    "dev:backend": "cd backend && python -m venv venv && source venv/bin/activate && pip install -r requirements.txt && python server.py",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && yarn build",
+    "build:backend": "echo 'Backend is a Python app - no build needed'",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "cd frontend && yarn test",
+    "test:backend": "cd backend && python -m pytest"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}
