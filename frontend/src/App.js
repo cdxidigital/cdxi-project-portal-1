@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import PaymentStatus from "@/pages/PaymentStatus";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { Toaster } from "@/components/ui/sonner";
 
 function Protected({ children }) {
@@ -55,24 +56,26 @@ function AppRoutes() {
 export default function App() {
     return (
         <div className="App">
-            <BrowserRouter>
-                <AuthProvider>
-                    <AppRoutes />
-                    <Toaster
-                        theme="dark"
-                        position="top-right"
-                        toastOptions={{
-                            style: {
-                                background: "#0C0C0E",
-                                border: "1px solid #27272A",
-                                color: "#ffffff",
-                                borderRadius: "0",
-                                fontFamily: "IBM Plex Sans, sans-serif",
-                            },
-                        }}
-                    />
-                </AuthProvider>
-            </BrowserRouter>
+            <ErrorBoundary>
+                <BrowserRouter>
+                    <AuthProvider>
+                        <AppRoutes />
+                        <Toaster
+                            theme="dark"
+                            position="top-right"
+                            toastOptions={{
+                                style: {
+                                    background: "#0C0C0E",
+                                    border: "1px solid #27272A",
+                                    color: "#ffffff",
+                                    borderRadius: "0",
+                                    fontFamily: "IBM Plex Sans, sans-serif",
+                                },
+                            }}
+                        />
+                    </AuthProvider>
+                </BrowserRouter>
+            </ErrorBoundary>
         </div>
     );
 }

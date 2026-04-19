@@ -1,31 +1,51 @@
-import React, { useEffect, useState, useRef } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "@/lib/api";
-import { CheckCircle, XCircle, CircleNotch } from "@phosphor-icons/react";
+import { CheckCircle, CircleNotch, XCircle } from "@phosphor-icons/react";
+
+const MAX_POLL_ATTEMPTS = 8;
+const POLL_INTERVAL_OK = 2000;
+const POLL_INTERVAL_ERR = 2500;
+
+function formatAmount(amountTotal, fallbackCurrency = "usd") {
+    if (amountTotal == null || Number.isNaN(Number(amountTotal))) return "—";
+    const value = Number(amountTotal) / 100;
+    return `${(fallbackCurrency || "usd").toUpperCase() === "USD" ? "$" : ""}${value.toFixed(2)}`;
+}
 
 export default function PaymentStatus() {
     const [params] = useSearchParams();
     const nav = useNavigate();
     const sessionId = params.get("session_id");
-    const [state, setState] = useState("checking"); // checking | success | failed | timeout
+
+    // states: checking | success | failed | timeout
+    const [state, setState] = useState(sessionId ? "checking" : "failed");
     const [info, setInfo] = useState(null);
-    const attempts = useRef(0);
+
+    // Track attempts + pending timeout so we can fully clean up on unmount.
+    const attemptsRef = useRef(0);
+    const timerRef = useRef(null);
+    const cancelledRef = useRef(false);
 
     useEffect(() => {
-        if (!sessionId) {
-            setState("failed");
-            return;
-        }
-        let cancelled = false;
+        if (!sessionId) return undefined;
+        cancelledRef.current = false;
+        attemptsRef.current = 0;
+
+        const schedule = (fn, ms) => {
+            timerRef.current = setTimeout(fn, ms);
+        };
+
         const poll = async () => {
-            if (cancelled) return;
-            if (attempts.current >= 8) {
+            if (cancelledRef.current) return;
+            if (attemptsRef.current >= MAX_POLL_ATTEMPTS) {
                 setState("timeout");
                 return;
             }
-            attempts.current += 1;
+            attemptsRef.current += 1;
             try {
                 const { data } = await api.get(`/payments/status/${sessionId}`);
+                if (cancelledRef.current) return;
                 setInfo(data);
                 if (data.payment_status === "paid") {
                     setState("success");
@@ -35,14 +55,21 @@ export default function PaymentStatus() {
                     setState("failed");
                     return;
                 }
-                setTimeout(poll, 2000);
+                schedule(poll, POLL_INTERVAL_OK);
             } catch {
-                setTimeout(poll, 2500);
+                if (cancelledRef.current) return;
+                schedule(poll, POLL_INTERVAL_ERR);
             }
         };
+
         poll();
+
         return () => {
-            cancelled = true;
+            cancelledRef.current = true;
+            if (timerRef.current) {
+                clearTimeout(timerRef.current);
+                timerRef.current = null;
+            }
         };
     }, [sessionId]);
 
@@ -65,8 +92,7 @@ export default function PaymentStatus() {
                             </h1>
                         </div>
                         <p className="mt-3 text-sm text-zinc-400">
-                            Stripe is confirming your transaction. This usually takes a
-                            few seconds.
+                            Stripe is confirming your transaction. This usually takes a few seconds.
                         </p>
                     </>
                 )}
@@ -80,14 +106,23 @@ export default function PaymentStatus() {
                             </h1>
                         </div>
                         <p className="mt-3 text-sm text-zinc-400">
-                            The milestone has been marked as paid. Progress is now
-                            unlocked.
+                            The milestone has been marked as paid. Progress is now unlocked.
                         </p>
                         {info && (
                             <div className="mt-6 grid grid-cols-2 gap-0 border border-[#27272A]">
-                                <Meta label="Amount" value={`$${(info.amount_total / 100).toFixed(2)}`} />
-                                <Meta label="Currency" value={(info.currency || "usd").toUpperCase()} />
-                                <Meta label="Status" value={info.payment_status?.toUpperCase()} full />
+                                <Meta
+                                    label="Amount"
+                                    value={formatAmount(info.amount_total, info.currency)}
+                                />
+                                <Meta
+                                    label="Currency"
+                                    value={(info.currency || "usd").toUpperCase()}
+                                />
+                                <Meta
+                                    label="Status"
+                                    value={(info.payment_status || "").toUpperCase()}
+                                    full
+                                />
                             </div>
                         )}
                     </>
@@ -102,8 +137,9 @@ export default function PaymentStatus() {
                             </h1>
                         </div>
                         <p className="mt-3 text-sm text-zinc-400">
-                            The checkout session was cancelled or expired. You can try
-                            again from the milestone.
+                            {sessionId
+                                ? "The checkout session was cancelled or expired. You can try again from the milestone."
+                                : "No checkout session was provided. Return to the dashboard to retry."}
                         </p>
                     </>
                 )}
@@ -117,8 +153,7 @@ export default function PaymentStatus() {
                             </h1>
                         </div>
                         <p className="mt-3 text-sm text-zinc-400">
-                            Taking longer than expected. Check back on the dashboard in a
-                            moment.
+                            Taking longer than expected. Check back on the dashboard in a moment.
                         </p>
                     </>
                 )}

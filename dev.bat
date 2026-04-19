@@ -1,50 +1,44 @@
 @echo off
-REM Development script for CDXI Project Portal
-REM Runs both frontend and backend servers concurrently
+setlocal
 
-setlocal enabledelayedexpansion
+cd /d "%~dp0"
 
-echo.
-echo 🚀 Starting CDXI Project Portal development servers...
-echo.
+where yarn >nul 2>&1
+if errorlevel 1 (
+  echo [dev] Missing required command: yarn
+  exit /b 1
+)
+where python >nul 2>&1
+if errorlevel 1 (
+  echo [dev] Missing required command: python
+  exit /b 1
+)
 
-REM Check if frontend dependencies are installed
+if not exist "backend\.env" echo [dev] WARNING: backend\.env not found ^(copy backend\.env.example^)
+if not exist "frontend\.env" echo [dev] WARNING: frontend\.env not found ^(copy frontend\.env.example^)
+
 if not exist "frontend\node_modules" (
-  echo 📦 Installing frontend dependencies...
-  cd frontend
+  echo [dev] Installing frontend dependencies...
+  pushd frontend
   call yarn install
-  cd ..
+  popd
 )
 
-REM Check if backend virtual environment exists
 if not exist "backend\venv" (
-  echo 📦 Creating Python virtual environment...
-  cd backend
-  python -m venv venv
-  call venv\Scripts\activate.bat
-  pip install -r requirements.txt
-  cd ..
-) else (
-  echo ✓ Virtual environment found
+  echo [dev] Creating Python virtualenv...
+  python -m venv backend\venv
+  call backend\venv\Scripts\activate.bat
+  python -m pip install --upgrade pip
+  pip install -r backend\requirements.txt
+  call backend\venv\Scripts\deactivate.bat
 )
 
-echo.
-echo ✓ Starting servers...
-echo Frontend: http://localhost:3000
-echo Backend: http://localhost:8000
-echo API Docs: http://localhost:8000/docs
-echo.
+echo [dev] Starting servers
+echo [dev] Frontend: http://localhost:3000
+echo [dev] Backend:  http://localhost:8000
+echo [dev] API docs: http://localhost:8000/docs
 
-REM Start frontend in a new window
-cd frontend
-start "CDXI Frontend" cmd /k "yarn start"
-cd ..
+start "cdxi-frontend" cmd /k "cd /d %~dp0frontend && yarn start"
+start "cdxi-backend"  cmd /k "cd /d %~dp0backend && call venv\Scripts\activate.bat && python -m uvicorn server:app --reload --host 0.0.0.0 --port 8000"
 
-REM Start backend in a new window
-cd backend
-start "CDXI Backend" cmd /k "call venv\Scripts\activate.bat && python -m uvicorn server:app --reload --host 0.0.0.0 --port 8000"
-cd ..
-
-echo ✓ Both servers are starting. Check the new windows for server output.
-echo.
-pause
+endlocal

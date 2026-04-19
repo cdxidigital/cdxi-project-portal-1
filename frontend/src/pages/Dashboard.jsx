@@ -1,6 +1,13 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { api, formatCurrency, formatDate } from "@/lib/api";
+import {
+    api,
+    formatCurrency,
+    formatDate,
+    getErrorMessage,
+    isPastDate,
+} from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 import KpiCard from "@/components/KpiCard";
 import StatusBadge from "@/components/StatusBadge";
 import NewClientDialog from "@/components/NewClientDialog";
@@ -23,6 +30,15 @@ export default function Dashboard() {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [activeClient, setActiveClient] = useState(null);
 
+    const refreshKpis = useCallback(async () => {
+        try {
+            const { data } = await api.get("/kpis");
+            setKpis(data);
+        } catch (err) {
+            console.warn("KPI refresh failed:", err?.message || err);
+        }
+    }, []);
+
     const load = useCallback(async () => {
         setLoading(true);
         try {
@@ -32,6 +48,10 @@ export default function Dashboard() {
             ]);
             setClients(cRes.data);
             setKpis(kRes.data);
+        } catch (err) {
+            if (err?.response?.status !== 401) {
+                toast.error(getErrorMessage(err, "Failed to load dashboard"));
+            }
         } finally {
             setLoading(false);
         }
@@ -42,6 +62,7 @@ export default function Dashboard() {
     }, [load]);
 
     const openClient = (c) => setActiveClient(c);
+
     const onDrawerChange = (updated) => {
         if (updated === null) {
             setActiveClient(null);
@@ -49,8 +70,10 @@ export default function Dashboard() {
             return;
         }
         setActiveClient(updated);
-        setClients((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-        api.get("/kpis").then(({ data }) => setKpis(data)).catch(() => {});
+        setClients((prev) =>
+            prev.map((c) => (c.id === updated.id ? updated : c)),
+        );
+        refreshKpis();
     };
 
     return (
@@ -89,6 +112,7 @@ export default function Dashboard() {
                         <button
                             onClick={logout}
                             data-testid="logout-button"
+                            aria-label="Sign out"
                             className="flex h-10 w-10 items-center justify-center border border-[#27272A] text-zinc-400 transition-colors hover:bg-[#1A1A1D] hover:text-white"
                             title="Sign out"
                         >
@@ -231,7 +255,7 @@ export default function Dashboard() {
                 onOpenChange={setDialogOpen}
                 onCreated={(c) => {
                     setClients((prev) => [c, ...prev]);
-                    api.get("/kpis").then(({ data }) => setKpis(data)).catch(() => {});
+                    refreshKpis();
                 }}
             />
 
@@ -249,10 +273,10 @@ function ClientRow({ client, idx, onOpen }) {
     const progress = p?.progress ?? 0;
     const status = p?.status ?? "Not Started";
     const overdue =
+        status !== "Completed" &&
         p?.next_due &&
-        p.next_payment &&
-        new Date(p.next_due) < new Date() &&
-        status !== "Completed";
+        p?.next_payment != null &&
+        isPastDate(p.next_due);
     const fillClass =
         status === "Completed"
             ? "completed"
