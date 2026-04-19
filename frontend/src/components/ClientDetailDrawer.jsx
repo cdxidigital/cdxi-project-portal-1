@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { api, formatApiErrorDetail, formatCurrency, formatDate } from "@/lib/api";
+import { api, formatCurrency, formatDate, getErrorMessage } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
 import { toast } from "sonner";
 import {
@@ -21,6 +21,7 @@ export default function ClientDetailDrawer({ client, onClose, onChange }) {
     const milestones = project?.milestones || [];
 
     const [addingMilestone, setAddingMilestone] = useState(false);
+    const [savingMilestone, setSavingMilestone] = useState(false);
     const [mName, setMName] = useState("");
     const [mAmount, setMAmount] = useState("");
     const [mDue, setMDue] = useState("");
@@ -44,7 +45,7 @@ export default function ClientDetailDrawer({ client, onClose, onChange }) {
             toast.success(m.payment_status === "paid" ? "Marked unpaid" : "Marked paid");
             await reload();
         } catch (e) {
-            toast.error(formatApiErrorDetail(e.response?.data?.detail) || e.message);
+            toast.error(getErrorMessage(e));
         }
     };
 
@@ -53,16 +54,20 @@ export default function ClientDetailDrawer({ client, onClose, onChange }) {
             await api.patch(`/milestones/${m.id}`, { completed: !m.completed });
             await reload();
         } catch (e) {
-            toast.error(formatApiErrorDetail(e.response?.data?.detail) || e.message);
+            toast.error(getErrorMessage(e));
         }
     };
 
     const removeMilestone = async (m) => {
+        if (!window.confirm(`Delete milestone "${m.name}"? This cannot be undone.`)) {
+            return;
+        }
         try {
             await api.delete(`/milestones/${m.id}`);
+            toast.success("Milestone removed");
             await reload();
         } catch (e) {
-            toast.error(formatApiErrorDetail(e.response?.data?.detail) || e.message);
+            toast.error(getErrorMessage(e));
         }
     };
 
@@ -71,13 +76,18 @@ export default function ClientDetailDrawer({ client, onClose, onChange }) {
             const { data } = await api.post(`/milestones/${m.id}/checkout`, {
                 origin_url: window.location.origin,
             });
-            window.location.href = data.url;
+            if (data?.url) {
+                window.location.href = data.url;
+            } else {
+                toast.error("Stripe did not return a checkout URL");
+            }
         } catch (e) {
-            toast.error(formatApiErrorDetail(e.response?.data?.detail) || e.message);
+            toast.error(getErrorMessage(e));
         }
     };
 
     const deleteClient = async () => {
+        if (!client) return;
         if (!window.confirm(`Remove ${client.name} and all project data?`)) return;
         try {
             await api.delete(`/clients/${client.id}`);
@@ -85,17 +95,28 @@ export default function ClientDetailDrawer({ client, onClose, onChange }) {
             onChange?.(null);
             onClose();
         } catch (e) {
-            toast.error(formatApiErrorDetail(e.response?.data?.detail) || e.message);
+            toast.error(getErrorMessage(e));
         }
     };
 
     const addMilestone = async (e) => {
         e.preventDefault();
-        if (!mName || !mAmount || !project) return;
+        if (savingMilestone) return;
+        const name = mName.trim();
+        const amountNum = Number(mAmount);
+        if (!name || !project) {
+            toast.error("Milestone name is required");
+            return;
+        }
+        if (!Number.isFinite(amountNum) || amountNum < 0) {
+            toast.error("Amount must be a non-negative number");
+            return;
+        }
+        setSavingMilestone(true);
         try {
             await api.post(`/projects/${project.id}/milestones`, {
-                name: mName,
-                amount: Number(mAmount),
+                name,
+                amount: amountNum,
                 due_date: mDue || null,
             });
             setMName("");
@@ -104,7 +125,9 @@ export default function ClientDetailDrawer({ client, onClose, onChange }) {
             setAddingMilestone(false);
             await reload();
         } catch (e) {
-            toast.error(formatApiErrorDetail(e.response?.data?.detail) || e.message);
+            toast.error(getErrorMessage(e));
+        } finally {
+            setSavingMilestone(false);
         }
     };
 
@@ -217,10 +240,11 @@ export default function ClientDetailDrawer({ client, onClose, onChange }) {
                                         />
                                         <button
                                             type="submit"
-                                            className="h-10 bg-white px-4 text-xs uppercase tracking-[0.2em] text-black transition-colors hover:bg-zinc-200"
+                                            disabled={savingMilestone}
+                                            className="h-10 bg-white px-4 text-xs uppercase tracking-[0.2em] text-black transition-colors hover:bg-zinc-200 disabled:opacity-50"
                                             data-testid="milestone-save-button"
                                         >
-                                            Save
+                                            {savingMilestone ? "Saving…" : "Save"}
                                         </button>
                                     </form>
                                 )}

@@ -7,12 +7,12 @@ import { toast } from "sonner";
 export default function Login() {
     const { user, login } = useAuth();
     const nav = useNavigate();
-    const [email, setEmail] = useState("parker@cdxi.au");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
-        if (user && user !== false) nav("/", { replace: true });
+        if (user) nav("/", { replace: true });
     }, [user, nav]);
 
     const submit = async (e) => {
@@ -121,7 +121,7 @@ export default function Login() {
                     </button>
 
                     <p className="mono mt-6 text-[10px] uppercase tracking-[0.2em] text-zinc-600">
-                        default admin · parker@cdxi.au
+                        admin access only
                     </p>
                 </form>
             </div>

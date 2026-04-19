@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api, formatApiErrorDetail } from "@/lib/api";
+import { api, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
 
 export default function NewClientDialog({ open, onOpenChange, onCreated }) {
@@ -28,8 +28,14 @@ export default function NewClientDialog({ open, onOpenChange, onCreated }) {
 
     const submit = async (e) => {
         e.preventDefault();
+        if (saving) return;
         if (!name.trim() || !projectName.trim()) {
             toast.error("Client name and project name are required");
+            return;
+        }
+        const amountNum = Number(totalAmount);
+        if (totalAmount !== "" && (!Number.isFinite(amountNum) || amountNum < 0)) {
+            toast.error("Total contract value must be a non-negative number");
             return;
         }
         setSaving(true);
@@ -38,14 +44,14 @@ export default function NewClientDialog({ open, onOpenChange, onCreated }) {
                 name: name.trim(),
                 email: email.trim() || null,
                 project_name: projectName.trim(),
-                total_amount: Number(totalAmount) || 0,
+                total_amount: totalAmount === "" ? 0 : amountNum,
             });
             toast.success(`${data.name} onboarded`);
             onCreated?.(data);
             reset();
             onOpenChange(false);
-        } catch (e) {
-            toast.error(formatApiErrorDetail(e.response?.data?.detail) || e.message);
+        } catch (err) {
+            toast.error(getErrorMessage(err));
         } finally {
             setSaving(false);
         }
