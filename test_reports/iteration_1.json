@@ -1,0 +1,45 @@
+{
+  "summary": "Full-stack testing of cdxi Partner Portal completed. 25/25 backend pytest tests pass; full Playwright UI flow (auth, NDA gate, EAA selection, ledger CRUD, roadmap filter, urgent signal, persistence after reload, logout, consultant bypass) all succeed end-to-end against the public REACT_APP_BACKEND_URL.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/eaa/models", "issue": "Endpoint is not gated by auth (no get_current_role dependency). Other portal endpoints require Bearer token; this is an inconsistency. Low risk because data is static reference."},
+      {"endpoint": "All", "issue": "Sessions are kept in an in-memory dict (SESSIONS), so a backend restart logs every user out. Acceptable for single-tenant MVP but worth noting; consider persisting tokens in MongoDB or using signed JWTs."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Retainer (EAA) cards", "issues": ["The 'Flagship' badge on the Partner card overlaps with the 'Selected' emerald badge once the tier is selected (both pinned to the top of the card). Consider repositioning Selected badge or merging into the Flagship pill when active."]},
+      {"screen": "Header on small viewports", "issues": ["The mobile bottom strip uses justify-between but on very narrow widths the four tab labels can wrap; consider min-w-max + horizontal scroll polish (already overflow-x-auto)."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Optional: gate GET /api/eaa/models behind get_current_role for consistency.",
+    "Optional: avoid double-badge overlap on selected Flagship EAA card."
+  ],
+  "critical_code_review_comments": [
+    "server.py is a single 296-line module — fine for current size. If more endpoints are added, split into routers (auth, ledger, eaa, milestones).",
+    "App.js is 605 lines and mixes auth, four tab views, and the urgent modal. Splitting into per-tab components (CommandView, RetainerView, LedgerView, RoadmapView, UrgentModal, AuthScreen) would improve maintainability and reduce re-renders.",
+    "Backend correctly excludes Mongo _id via projection {'_id':0} on list endpoints. Good.",
+    "Pydantic validation, HTTP 400/401/403/404 status codes, and env-driven config (PINs, reserve, MONGO_URL, DB_NAME) are all implemented per guidelines.",
+    "All interactive elements expose data-testid attributes — testability is excellent.",
+    "Frontend correctly uses process.env.REACT_APP_BACKEND_URL with /api prefix; no hardcoded URLs.",
+    "Token is stored in localStorage; consider httpOnly cookie for higher-security deployments (acceptable for this MVP)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py (created)",
+    "/app/test_reports/pytest/pytest_results.xml (generated)"
+  ],
+  "success_rate": {"backend": "100% (25/25)", "frontend": "100% (12/12 flows)"},
+  "test_credentials": "CLIENT_PIN=4613, CONSULTANT_PIN=1991 (confirmed working from /app/memory/test_credentials.md and /app/backend/.env).",
+  "seed_data_creation": "No seed data required. Tests created TEST_ prefixed expenses + urgent signals during the run and cleaned them up. client_state singleton was reset to {nda_accepted:false, eaa_selection:null} before frontend test; after the run it is {nda_accepted:true, eaa_selection:'partner'} (real client flow state).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend SESSIONS is in-memory: a backend restart invalidates all tokens (including the localStorage one) — re-login as part of any retest. Use /app/backend/tests/backend_test.py as regression suite (pytest /app/backend/tests/). The MongoDB collections used: client_state (singleton _id='singleton'), expenses, urgent_signals. State after this run: NDA accepted, EAA = partner."
+}
