@@ -25,8 +25,8 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# In-memory session token store: token -> role
-SESSIONS: dict[str, str] = {}
+# Session tokens are persisted in MongoDB collection `sessions`
+# Document shape: {"_id": <token>, "role": "client"|"consultant", "created_at": iso}
 
 # Static reference data
 PROJECT_NODES = [
@@ -107,10 +107,10 @@ async def get_current_role(authorization: Optional[str] = Header(None)) -> str:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
     token = authorization.split(" ", 1)[1].strip()
-    role = SESSIONS.get(token)
-    if not role:
+    session = await db.sessions.find_one({"_id": token})
+    if not session or "role" not in session:
         raise HTTPException(status_code=401, detail="Invalid or expired session")
-    return role
+    return session["role"]
 
 
 async def get_client_state_doc() -> dict:
@@ -137,7 +137,11 @@ async def verify_pin(payload: PinVerifyRequest):
     else:
         raise HTTPException(status_code=401, detail="Invalid PIN")
     token = secrets.token_urlsafe(32)
-    SESSIONS[token] = role
+    await db.sessions.insert_one({
+        "_id": token,
+        "role": role,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
     return PinVerifyResponse(role=role, token=token)
 
 
@@ -145,7 +149,7 @@ async def verify_pin(payload: PinVerifyRequest):
 async def logout(authorization: Optional[str] = Header(None)):
     if authorization and authorization.startswith("Bearer "):
         token = authorization.split(" ", 1)[1].strip()
-        SESSIONS.pop(token, None)
+        await db.sessions.delete_one({"_id": token})
     return {"ok": True}
 
 
@@ -208,7 +212,7 @@ async def delete_expense(expense_id: str, role: str = Depends(get_current_role))
 
 
 @api_router.get("/eaa/models")
-async def list_eaa_models():
+async def list_eaa_models(role: str = Depends(get_current_role)):
     return EAA_MODELS
 
 
